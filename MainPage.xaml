@@ -1,0 +1,57 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+	Copyright 2026 Pac-Dessert1436
+
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+
+		http://www.apache.org/licenses/LICENSE-2.0
+
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+-->
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ZhongYaoQuickMemo.MainPage"
+             Title="《中药快快记》答题程序"
+             BackgroundColor="CornflowerBlue">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*"
+          ColumnDefinitions="*,*"
+          Padding="20" RowSpacing="20">
+        <!-- 第一行：计时器 / 得分 -->
+        <Label Grid.Row="0" Grid.Column="0" x:Name="LblTimer"
+               FontSize="22" TextColor="LightPink" FontAttributes="Bold"/>
+        <Label Grid.Row="0" Grid.Column="1" x:Name="LblScore"
+               FontSize="22" TextColor="Wheat"  FontAttributes="Bold"
+               HorizontalOptions="End"/>
+
+        <!-- 第二行：题目 -->
+        <Label Grid.Row="1" Grid.ColumnSpan="2" x:Name="LblQuestion"
+               FontSize="22" TextColor="Black" FontAttributes="Bold"
+               HorizontalOptions="Center"/>
+
+        <!-- 第三行：答案输入 -->
+        <Entry Grid.Row="2" Grid.ColumnSpan="2" x:Name="TxtAnswer"
+               FontSize="22" Placeholder="请输入答案" IsEnabled="False"
+               TextChanged="OnAnswerTextChanged"/>
+
+        <!-- 第四行：题号 -->
+        <Label Grid.Row="3" Grid.ColumnSpan="2" x:Name="LblQuestionNum"
+               FontSize="22" TextColor="Black" FontAttributes="Bold"
+               HorizontalOptions="Center"/>
+
+        <!-- 第五行：两个按钮 -->
+        <Button Grid.Row="4" Grid.Column="0" x:Name="BtnStart"
+                Text="开始"  FontSize="22" FontAttributes="Bold"
+                BackgroundColor="White" TextColor="Black" CornerRadius="10"
+                Clicked="OnStartClicked"/>
+        <Button Grid.Row="4" Grid.Column="1" x:Name="BtnSubmit"
+                Text="提交答案"  FontSize="22" FontAttributes="Bold"
+                BackgroundColor="White" TextColor="Black" CornerRadius="10"
+                IsEnabled="False" Clicked="OnSubmitClicked"/>
+    </Grid>
+</ContentPage>
