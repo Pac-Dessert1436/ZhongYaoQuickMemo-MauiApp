@@ -21,174 +21,174 @@ namespace ZhongYaoQuickMemo;
 
 public partial class MainPage : ContentPage
 {
-    private readonly IDeserializer _parser =
-        new DeserializerBuilder()
-            .WithoutNodeTypeResolver<TagNodeTypeResolver>()
-            .Build();
+	private readonly IDeserializer _parser =
+		new DeserializerBuilder()
+			.WithoutNodeTypeResolver<TagNodeTypeResolver>()
+			.Build();
 
-    private IReadOnlyDictionary<string, string>? _bank;
-    private List<string> _questionList = [];
-    private int _questIndex;
-    private string _currQuestion = string.Empty;
-    private string _currAnswer = string.Empty;
-    private int _score, _timeLeft;
-    private bool _shuffle, _isSubmitting;
-    private readonly System.Timers.Timer _timer;
+	private IReadOnlyDictionary<string, string>? _bank;
+	private List<string> _questionList = [];
+	private int _questIndex;
+	private string _currQuestion = string.Empty;
+	private string _currAnswer = string.Empty;
+	private int _score, _timeLeft;
+	private bool _shuffle, _isSubmitting;
+	private readonly System.Timers.Timer _timer;
 
-    private const int INITIAL_TIME_LIMIT = 30;
+	private const int INITIAL_TIME_LIMIT = 30;
 
-    public MainPage()
-    {
-        InitializeComponent();
-        _timer = new System.Timers.Timer(1000) { AutoReset = true };
-        _timer.Elapsed += OnTimerTick;
-        LoadQuestionBank();
-        LblTimer.Text = "剩余时间: --";
-        LblScore.Text = "得分: 0";
-        LblQuestion.Text = "点击开始按钮开始中药功效答题之旅";
-    }
+	public MainPage()
+	{
+		InitializeComponent();
+		_timer = new System.Timers.Timer(1000) { AutoReset = true };
+		_timer.Elapsed += OnTimerTick;
+		LoadQuestionBank();
+		LblTimer.Text = "剩余时间: --";
+		LblScore.Text = "得分: 0";
+		LblQuestion.Text = "点击开始按钮开始中药功效答题之旅";
+	}
 
-    /* ==================== 题库加载 ==================== */
-    private async void LoadQuestionBank()
-    {
-        try
-        {
-            _bank = _parser.Deserialize<Dictionary<string, string>>(QUESTION_BANK);
-            BtnStart.IsEnabled = true;
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlertAsync("加载题库失败", ex.Message, "OK");
-            _bank = new Dictionary<string, string>();
-            BtnStart.IsEnabled = false;
-        }
-    }
+	/* ==================== 题库加载 ==================== */
+	private async void LoadQuestionBank()
+	{
+		try
+		{
+			_bank = _parser.Deserialize<Dictionary<string, string>>(QUESTION_BANK);
+			BtnStart.IsEnabled = true;
+		}
+		catch (Exception ex)
+		{
+			await DisplayAlertAsync("加载题库失败", ex.Message, "OK");
+			_bank = new Dictionary<string, string>();
+			BtnStart.IsEnabled = false;
+		}
+	}
 
-    /* ==================== 开始 / 重新开始 ==================== */
-    private async void OnStartClicked(object sender, EventArgs e)
-    {
-        _timer.Stop();
-        if (BtnStart.Text == "重新开始")
-        {
-            bool ok = await DisplayAlertAsync("CAUTION!",
-                "当前答题进度将清空！确定重新开始吗？", "是", "否");
-            if (!ok) { _timer.Start(); return; }
-        }
+	/* ==================== 开始 / 重新开始 ==================== */
+	private async void OnStartClicked(object sender, EventArgs e)
+	{
+		_timer.Stop();
+		if (BtnStart.Text == "重新开始")
+		{
+			bool ok = await DisplayAlertAsync("CAUTION!",
+				"当前答题进度将清空！确定重新开始吗？", "是", "否");
+			if (!ok) { _timer.Start(); return; }
+		}
 
-        bool shuffle = await DisplayAlertAsync("是否打乱中药功效题库？(Y/N)",
-            "如果你不确定能倒背如流，可以先不打乱题库", "打乱", "不打乱");
-        _shuffle = shuffle;
+		bool shuffle = await DisplayAlertAsync("是否打乱中药功效题库？(Y/N)",
+			"如果你不确定能倒背如流，可以先不打乱题库", "打乱", "不打乱");
+		_shuffle = shuffle;
 
-        _score = 0;
-        LblScore.Text = $"得分: {_score}";
-        BtnStart.Text = "重新开始";
-        TxtAnswer.IsEnabled = true;
-        BtnSubmit.IsEnabled = true;
+		_score = 0;
+		LblScore.Text = $"得分: {_score}";
+		BtnStart.Text = "重新开始";
+		TxtAnswer.IsEnabled = true;
+		BtnSubmit.IsEnabled = true;
 
-        TryShuffleQuestions();
-        NextQuestion();
-    }
+		TryShuffleQuestions();
+		NextQuestion();
+	}
 
-    /* ==================== 提交 ==================== */
-    private async void OnSubmitClicked(object sender, EventArgs e)
-    {
-        _isSubmitting = true;
-        _timer.Stop();
-        bool correct = TxtAnswer.Text.Trim().Equals(_currAnswer, StringComparison.OrdinalIgnoreCase);
-        if (correct)
-        {
-            _score++;
-            await DisplayAlertAsync("回答正确！得分+1", $"牢记正确答案：{_currAnswer}", "OK");
-        }
-        else
-        {
-            await DisplayAlertAsync("很抱歉，回答错误", $"正确答案是：{_currAnswer}", "OK");
-        }
-        NextQuestion();
-    }
+	/* ==================== 提交 ==================== */
+	private async void OnSubmitClicked(object sender, EventArgs e)
+	{
+		_isSubmitting = true;
+		_timer.Stop();
+		bool correct = TxtAnswer.Text.Trim().Equals(_currAnswer, StringComparison.OrdinalIgnoreCase);
+		if (correct)
+		{
+			_score++;
+			await DisplayAlertAsync("回答正确！得分+1", $"牢记正确答案：{_currAnswer}", "OK");
+		}
+		else
+		{
+			await DisplayAlertAsync("很抱歉，回答错误", $"正确答案是：{_currAnswer}", "OK");
+		}
+		NextQuestion();
+	}
 
-    /* ==================== 输入框暂停计时器 500 ms ==================== */
-    private CancellationTokenSource? _inputCts;
-    private void OnAnswerTextChanged(object sender, TextChangedEventArgs e)
-    {
-        _inputCts?.Cancel();
-        _inputCts = new();
-        _timer.Stop();
-        Task.Delay(500, _inputCts.Token)
-            .ContinueWith(_ => {
-                if (!_inputCts.Token.IsCancellationRequested)
-                    if (_isSubmitting) _timer.Stop(); else _timer.Start(); 
-            }, TaskScheduler.Current);
-    }
+	/* ==================== 输入框暂停计时器 500 ms ==================== */
+	private CancellationTokenSource? _inputCts;
+	private void OnAnswerTextChanged(object sender, TextChangedEventArgs e)
+	{
+		_inputCts?.Cancel();
+		_inputCts = new();
+		_timer.Stop();
+		Task.Delay(500, _inputCts.Token)
+			.ContinueWith(_ => {
+				if (!_inputCts.Token.IsCancellationRequested)
+					if (_isSubmitting) _timer.Stop(); else _timer.Start(); 
+			}, TaskScheduler.Current);
+	}
 
-    /* ==================== 打乱题库 ==================== */
-    private void TryShuffleQuestions()
-    {
-        var keys = _bank!.Keys.ToList();
-        if (_shuffle)
-        {
-            var rnd = new Random();
-            for (int i = keys.Count - 1; i > 0; i--)
-            {
-                int j = rnd.Next(i + 1);
-                (keys[i], keys[j]) = (keys[j], keys[i]);
-            }
-        }
-        _questionList = keys;
-        _questIndex = 0;
-    }
+	/* ==================== 打乱题库 ==================== */
+	private void TryShuffleQuestions()
+	{
+		var keys = _bank!.Keys.ToList();
+		if (_shuffle)
+		{
+			var rnd = new Random();
+			for (int i = keys.Count - 1; i > 0; i--)
+			{
+				int j = rnd.Next(i + 1);
+				(keys[i], keys[j]) = (keys[j], keys[i]);
+			}
+		}
+		_questionList = keys;
+		_questIndex = 0;
+	}
 
-    /* ==================== 下一题 ==================== */
-    private void NextQuestion()
-    {
-        LblScore.Text = $"得分: {_score}";
-        int total = _bank!.Count;
-        if (_questIndex >= total)
-        {
-            LblQuestion.Text = _score == total
-                ? "恭喜全部答对所有题目！考研加油"
-                : $"距离满分还差{total - _score}分，再来一次？";
-            LblQuestionNum.Text = "题库已完成！";
-            BtnSubmit.IsEnabled = false;
-            return;
-        }
+	/* ==================== 下一题 ==================== */
+	private void NextQuestion()
+	{
+		LblScore.Text = $"得分: {_score}";
+		int total = _bank!.Count;
+		if (_questIndex >= total)
+		{
+			LblQuestion.Text = _score == total
+				? "恭喜全部答对所有题目！考研加油"
+				: $"距离满分还差{total - _score}分，再来一次？";
+			LblQuestionNum.Text = "题库已完成！";
+			BtnSubmit.IsEnabled = false;
+			return;
+		}
 
-        TxtAnswer.Text = string.Empty;
-        _currQuestion = _questionList[_questIndex];
-        _currAnswer = _bank[_currQuestion];
+		TxtAnswer.Text = string.Empty;
+		_currQuestion = _questionList[_questIndex];
+		_currAnswer = _bank[_currQuestion];
 
-        LblQuestion.Text = $"请说出 {_currQuestion} 的药用功效：";
-        LblQuestionNum.Text = $"第{_questIndex + 1}题，共{total}题";
-        _timeLeft = INITIAL_TIME_LIMIT;
-        LblTimer.Text = $"剩余时间: {_timeLeft}";
-        _timer.Start();
-        _questIndex++;
-        _isSubmitting = false;
-    }
+		LblQuestion.Text = $"请说出 {_currQuestion} 的药用功效：";
+		LblQuestionNum.Text = $"第{_questIndex + 1}题，共{total}题";
+		_timeLeft = INITIAL_TIME_LIMIT;
+		LblTimer.Text = $"剩余时间: {_timeLeft}";
+		_timer.Start();
+		_questIndex++;
+		_isSubmitting = false;
+	}
 
-    /* ==================== 每秒倒计时 ==================== */
-    private async void OnTimerTick(object? sender, ElapsedEventArgs e)
-    {
-        _timeLeft--;
-        MainThread.BeginInvokeOnMainThread(() => LblTimer.Text = $"剩余时间: {_timeLeft}");
+	/* ==================== 每秒倒计时 ==================== */
+	private async void OnTimerTick(object? sender, ElapsedEventArgs e)
+	{
+		_timeLeft--;
+		MainThread.BeginInvokeOnMainThread(() => LblTimer.Text = $"剩余时间: {_timeLeft}");
 
-        if (_timeLeft <= 0)
-        {
-            _timer.Stop();
-            bool correct = TxtAnswer.Text.Trim().Equals(_currAnswer, StringComparison.OrdinalIgnoreCase);
-            string prompt = correct ? "回答正确，+1分" : "回答错误";
-            _score += correct ? 1 : 0;
-            await MainThread.InvokeOnMainThreadAsync(async () =>
-            {
-                await DisplayAlertAsync("时间到！已自动提交答案",
-                    $"正确答案是：{_currAnswer}（{prompt}）", "OK");
-                NextQuestion();
-            });
-        }
-    }
+		if (_timeLeft <= 0)
+		{
+			_timer.Stop();
+			bool correct = TxtAnswer.Text.Trim().Equals(_currAnswer, StringComparison.OrdinalIgnoreCase);
+			string prompt = correct ? "回答正确，+1分" : "回答错误";
+			_score += correct ? 1 : 0;
+			await MainThread.InvokeOnMainThreadAsync(async () =>
+			{
+				await DisplayAlertAsync("时间到！已自动提交答案",
+					$"正确答案是：{_currAnswer}（{prompt}）", "OK");
+				NextQuestion();
+			});
+		}
+	}
 
-    // NOTE: 由于意外错误，无法正常读取“中药快快记.yml”文件，以下常量是整个文件的硬编码内容
-    private const string QUESTION_BANK = @"%YAML 1.2
+	// NOTE: 由于意外错误，无法正常读取“中药快快记.yml”文件，以下常量是整个文件的硬编码内容
+	private const string QUESTION_BANK = @"%YAML 1.2
 ---
 麻黄: 发汗解表，宣肺平喘，利水消肿
 香薷: 发汗解表，化湿和中，利水消肿
@@ -369,6 +369,8 @@ public partial class MainPage : ContentPage
 胡椒: 温中散寒，下气，消痰
 荜茇: 温中散寒，下气止痛
 荜澄茄: 温中散寒，行气止痛
+陈皮: 理气健脾，燥湿化痰
+青皮: 疏肝破气，消积化滞
 枳实: 破气消积，化痰散痞
 木香: 行气止痛，健脾消食
 沉香: 行气止痛，温中止呕，纳气平喘
